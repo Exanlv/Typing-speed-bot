@@ -1,37 +1,42 @@
-import { Client, Message } from 'discord.js';
-const token = 'NTc3OTQxNDY4NzA3MDI5MDM0.XNsX9A.bE3a3Gf_K6vttm4T06qOeHYE4Ts';
+import { Client } from 'discord.js';
+import { Config } from './config';
+import { Bot } from './bot';
 
-const client = new Client;
+const client = new Client();
 
+let bot = new Bot();
 
+client.on('typingStart', (channel, user) => {
+	if (user.bot)
+		return;
+
+	bot.startTyping(user.id);
+});
+
+client.on('message', message => {
+	if (message.author.bot)
+		return;
+
+	if (message.content.toUpperCase().startsWith('!SPEED')) {
+		if (message.mentions.members && message.mentions.members.size) {
+			message.reply(`Their typing speed is ${bot.getWPM(message.mentions.members.first().id)}`);
+			return;
+		}
+		message.reply(`your typing speed is ${bot.getWPM(message.author.id)}`);
+		return;
+	}
+
+	bot.messageSend(message);
+});
 
 client.on('ready', () => {
-	console.log('Bot logged in, woooooo!');
+	console.log('Bot logged in');
 })
 
-function sleep(ms: number): Promise<void> {
-	return new Promise((resolve: any): any => setTimeout(resolve, ms) );
-}
+client.login(Config.token);
 
-client.on('message', async (message: Message) => {
-	if (message.content.toUpperCase() !== '!SPEED')
-		return;
-		
-	let role = message.guild.roles.find(r => r.name.toUpperCase() === 'CHOKED');
+setInterval(() => {
+	bot.saveData();
+}, 300000);
 
-	if (!role)
-		return;
-
-	message.member.addRole(role);
-	
-	await sleep(30000);
-
-	message.member.removeRole(role);
-});
-
-
-client.on('error', err => {
-
-});
-
-client.login(token);
+client.on('error', console.error);
